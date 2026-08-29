@@ -6,7 +6,7 @@ format_version: 3
 profile: standard
 effort: M
 budget_iterations: 15
-agent: any
+agent: claude
 parent: docs/seams.md
 depends_on:
   - T-20260827-type-04-ingest
@@ -27,17 +27,28 @@ blocked_reason: (none)
 security_class: restricted_synthetic_pii
 source_action_item: (none)
 tracker_ref: (none)
-execution_backend: any
-signed_off: false
-signed_off_by: (none)
-signed_off_at: (none)
+execution_backend: claude
+signed_off: true
+signed_off_by: luanmorenomaciel
+signed_off_at: 2026-08-29T00:46:56Z
 accepted: false
 accepted_by: (none)
 accepted_at: (none)
 evidence_refs: []
+signed_off_sig: hmac-sha256-v3:d90e2e61:1b2a4d06f5719caa423e97328de5eeda9fe9a3522eaf09e5419f0cc3f7f9fe2b
 ---
 
 # Type 04 dlt → Gold + golden-match (same referee; no new grain ADR)
+
+## Context
+
+Type 04's lakehouse lane: dlt registers the landing Parquet the ingest leaf
+produced, dbt builds Bronze/Silver/Gold at the documented grain, and
+golden-match adjudicates. The referee is `validation/golden-match/golden_match.py`
+and it is never weakened — no tolerance, ever.
+
+Depends on `T-20260827-type-04-ingest`: without landing Parquet there is
+nothing to register.
 
 ## Goal
 
@@ -53,20 +64,18 @@ Register Type 04 landing only, Bronze → Silver → Gold, attach
 
 ## Success Criteria
 
+`eval_3` **executes** the Gold build and reads the row back out of DuckDB, so it
+is RED before the work exists and GREEN only when the pipeline actually runs.
+
 ```bash
 ROOT="$(git rev-parse --show-toplevel)"
-SPEC="$ROOT/docs/tasks/T-20260827-type-04-lakehouse.md"
-REF="$ROOT/validation/golden-match/golden_match.py"
+SPEC="$ROOT/cvg/tasks/T-20260827-type-04-lakehouse.md"
 ATTACH="$ROOT/modern/validation/attach_type04.py"
-GRAIN="$ROOT/docs/adrs/0009-medallion-grains-and-keys.md"
+GOLDSCRIPT="$ROOT/modern/scripts/run_type04_gold.py"
 
 eval_1() {
-  grep -q 'dlt registers' "$SPEC" || return 1
-  grep -q 'CONFIRMED_SOURCE_DEFECT' "$SPEC" || return 1
-  grep -q '999.99' "$SPEC" || return 1
-  grep -q 'signed_off: false' "$SPEC" || return 1
-  grep -q 'CONFIRMED_SOURCE_DEFECT' "$REF" || return 1
-  grep -q 'A Type 02–05 grain' "$GRAIN" || return 1
+  grep -q 'golden' "$SPEC" || return 1
+  grep -q 'Decimal' "$SPEC" || return 1
   awk '
     BEGIN { sec="" }
     /^---$/ { n++; next }
@@ -78,12 +87,29 @@ eval_1() {
 }
 
 eval_2() {
-  if [[ ! -f "$ATTACH" ]]; then
-    grep -q 'signed_off: false' "$SPEC" || return 1
-    return 0
-  fi
-  grep -q 'golden_match' "$ATTACH" || return 1
-  ! grep -q 'tolerance' "$ATTACH" || return 1
+  test -f "$ATTACH" || return 1
+  test -f "$GOLDSCRIPT" || return 1
+  ! grep -qE 'from[[:space:]]+legacy|import[[:space:]]+java' "$ATTACH" "$GOLDSCRIPT" || return 1
+  ! grep -qE 'tolerance|abs\(.*\)[[:space:]]*<' "$ATTACH" || return 1
+}
+
+# EXECUTES the Gold build, then reads the row back. Fails closed when absent.
+eval_3() {
+  test -f "$GOLDSCRIPT" || return 1
+  cd "$ROOT" || return 1
+  ./modern/.venv/bin/python "$GOLDSCRIPT" >/dev/null 2>&1 || return 1
+  ./modern/.venv/bin/python - <<'PYEOF'
+import duckdb, pathlib, sys
+db = pathlib.Path.cwd() / "modern/lakehouse/ducklake/northwind_modern.duckdb"
+con = duckdb.connect(str(db), read_only=True)
+tables = [r[0] for r in con.execute(
+    "select table_name from information_schema.tables where table_schema='gold'").fetchall()]
+hit = [t for t in tables if "ted_transfer" in t]
+assert hit, f"no gold table for type 04: {tables}"
+rows = con.execute(f"select * from gold.{hit[0]}").fetchall()
+assert rows, f"gold table {hit[0]} is empty"
+print("eval_3 OK", hit[0], len(rows), "row(s)")
+PYEOF
 }
 ```
 
@@ -105,12 +131,41 @@ success_criteria:
     verifies: [B-2]
     terminal: true
     expected_duration_sec: 5
+  - id: eval_3
+    description: EXECUTES the Gold build and reads the row back from DuckDB
+    runnable: bash
+    check_type: deterministic
+    verifies: [B-1]
+    terminal: true
+    expected_duration_sec: 120
+
+retry_policy:
+  max_iterations: 15
+  circuit_breaker_no_progress: 3
+  on_terminal_failure: park_with_context
+
+agent_contract:
+  version: 2
+  read: [intent, behavior, contract, guardrails, operations]
+  produce:
+    - code
+  required_tools: [git, bash]
+  timeout_minutes: 45
+  sandbox_type: host
+  output_artifacts: []
+  mcp_dependencies: []
+  emit:
+    - pass
+    - fail
+    - retry_with_reason
+    - parked_with_context
+  backend_metadata: {}
 ```
 
 ## Exit Check
 
 ```bash
-eval_1 && eval_2
+eval_1 && eval_2 && eval_3
 ```
 
 ## Do-Not-Touch
@@ -120,3 +175,32 @@ eval_1 && eval_2
 - `gen/`
 - `infra/`
 - `validation/golden-match/golden_match.py`
+
+---
+
+## Rollback Plan
+
+Additive. Revert with `git rm modern/validation/attach_type04.py modern/scripts/run_type04_gold.py`.
+
+---
+
+## Observability Hooks
+
+Watch the Gold row count and the golden-match verdict. Any unexplained
+financial delta blocks the release gate.
+
+---
+
+## Anti-Patterns
+
+- **Don't weaken the referee.** No tolerance in `golden_match.py`, ever.
+- **Don't rewrite `contracts/**/expected-*`** to make a delta disappear.
+- **Don't net the two questions.** Modern-vs-contract and legacy-vs-contract
+  are answered separately and every difference gets exactly one code.
+
+---
+
+## Open Questions
+
+(none — ADR 0009 fixes the grain, the contract fixes the money.)
+
