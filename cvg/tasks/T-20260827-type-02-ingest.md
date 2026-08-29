@@ -32,12 +32,12 @@ tracker_ref: (none)
 execution_backend: claude
 signed_off: true
 signed_off_by: luanmorenomaciel
-signed_off_at: 2026-08-28T23:39:35Z
+signed_off_at: 2026-08-29T00:22:25Z
 accepted: false
 accepted_by: (none)
 accepted_at: (none)
 evidence_refs: []
-signed_off_sig: hmac-sha256-v3:d90e2e61:387a6c6f46d62e50d29b1d2f8bc7ab1e88799dbf1d5c53239f85fb82e0828487
+signed_off_sig: hmac-sha256-v3:d90e2e61:43cef5f4f7d2d182309916a026d0903bbae84a70f177cf23d43699cac75a0744
 ---
 
 # Type 02 ingest → landing (five-file package; zero Parquet on DF-SOURCE-002)
@@ -86,7 +86,6 @@ ROOT="$(git rev-parse --show-toplevel)"
 SPEC="$ROOT/cvg/tasks/T-20260827-type-02-ingest.md"
 FINDING="$ROOT/contracts/types/02-instant-payment-events/main/expected-df-source-002-finding.yaml"
 PKG="$ROOT/modern/ingestion/src/northwind_pay/types/02-instant-payment-events"
-PY_BIN="$ROOT/modern/.venv/bin/python"
 
 eval_1() {
   grep -q 'model → parser → schema → writer → handler' "$SPEC" || return 1
@@ -117,9 +116,10 @@ eval_2() {
 
 # EXECUTES the artifact. Fails closed when the package is absent.
 eval_3() {
-  test -x "$PY_BIN" || return 1
+  test -x "$ROOT/modern/.venv/bin/python" || return 1
   test -f "$PKG/handler.py" || return 1
-  "$PY_BIN" - <<'PYEOF'
+  cd "$ROOT" || return 1
+  ./modern/.venv/bin/python - <<'PYEOF'
 import importlib.util, pathlib, sys, tempfile
 ROOT = pathlib.Path(__file__).resolve().parents[0] if False else pathlib.Path.cwd()
 PKG = ROOT / "modern/ingestion/src/northwind_pay/types/02-instant-payment-events"

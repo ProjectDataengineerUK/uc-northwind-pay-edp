@@ -4,7 +4,7 @@
 
 - **Spec (canonical):** `cvg/tasks/T-20260827-type-02-ingest.md`
 - **Contract:** `cvg/execution/T-20260827-type-02-ingest/execution-profile.yaml`
-- **Epoch:** `T-20260827-type-02-ingest@d3259f65bc2c`
+- **Epoch:** `T-20260827-type-02-ingest@dec930b86bbf`
 
 ## Goal
 

@@ -11,7 +11,7 @@
         "epoch_change"
       ]
     },
-    "epoch": "T-20260827-type-02-ingest@dec930b86bbf",
+    "epoch": "T-20260827-type-04-ingest@a694b5156335",
     "grants": [
       {
         "capability": "fs.read",
@@ -33,11 +33,11 @@
         "granted": true,
         "phase": "implement",
         "scope": [
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/handler.py",
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/model.py",
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/parser.py",
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/schema.py",
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/writer.py"
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/handler.py",
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/model.py",
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/parser.py",
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/schema.py",
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/writer.py"
         ]
       },
       {
@@ -59,11 +59,11 @@
         "granted": true,
         "phase": "settle",
         "scope": [
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/handler.py",
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/model.py",
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/parser.py",
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/schema.py",
-          "modern/ingestion/src/northwind_pay/types/02-instant-payment-events/writer.py"
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/handler.py",
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/model.py",
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/parser.py",
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/schema.py",
+          "modern/ingestion/src/northwind_pay/types/04-ted-transfer-settlement/writer.py"
         ]
       },
       {
@@ -96,7 +96,7 @@
   "enforcement": {
     "adapters": [
       {
-        "path": "cvg/execution/T-20260827-type-02-ingest/adapters/generic.json",
+        "path": "cvg/execution/T-20260827-type-04-ingest/adapters/generic.json",
         "resolution": {
           "controls": {
             "fs.write": {
@@ -134,7 +134,7 @@
         "runtime": "generic"
       },
       {
-        "path": "cvg/execution/T-20260827-type-02-ingest/adapters/claude.json",
+        "path": "cvg/execution/T-20260827-type-04-ingest/adapters/claude.json",
         "resolution": {
           "controls": {
             "fs.write": {
@@ -172,7 +172,7 @@
         "runtime": "claude"
       },
       {
-        "path": "cvg/execution/T-20260827-type-02-ingest/adapters/codex.json",
+        "path": "cvg/execution/T-20260827-type-04-ingest/adapters/codex.json",
         "resolution": {
           "controls": {
             "fs.write": {
@@ -210,7 +210,7 @@
         "runtime": "codex"
       },
       {
-        "path": "cvg/execution/T-20260827-type-02-ingest/adapters/kimi.json",
+        "path": "cvg/execution/T-20260827-type-04-ingest/adapters/kimi.json",
         "resolution": {
           "controls": {
             "fs.write": {
@@ -262,7 +262,7 @@
       "inferred_source": "task_spec.execution_backend",
       "source": "task_spec.execution_backend"
     },
-    "task_brief": "cvg/execution/T-20260827-type-02-ingest/AGENTS.task.md",
+    "task_brief": "cvg/execution/T-20260827-type-04-ingest/AGENTS.task.md",
     "tool_input_guard": "skills/task-to-runtime-contract/scripts/guard-tool-input.py",
     "unenforced_waivers": []
   },
@@ -272,7 +272,7 @@
     "version": "1.0.0"
   },
   "knowledge": {
-    "candidate_output": "cvg/knowledge/candidates/T-20260827-type-02-ingest.md",
+    "candidate_output": "cvg/knowledge/candidates/T-20260827-type-04-ingest.md",
     "promotion": "owner_or_designated_reviewer"
   },
   "policy": {
@@ -293,7 +293,7 @@
     }
   },
   "receipt": {
-    "path": "cvg/receipts/T-20260827-type-02-ingest.json"
+    "path": "cvg/receipts/T-20260827-type-04-ingest.json"
   },
   "schema": "cvg.execution-profile.v1",
   "task": {
@@ -302,10 +302,10 @@
       "signed_off": true,
       "trust_tier": 1
     },
-    "id": "T-20260827-type-02-ingest",
+    "id": "T-20260827-type-04-ingest",
     "spec_ref": {
-      "path": "cvg/tasks/T-20260827-type-02-ingest.md",
-      "sha256": "dec930b86bbf2731d8f8725dd156637065172cec79c7aa48c155606d912af444"
+      "path": "cvg/tasks/T-20260827-type-04-ingest.md",
+      "sha256": "a694b5156335cb07ea8b53ac6037b0c98992a746e3735069140aa436d1b0b191"
     }
   },
   "topology": {
