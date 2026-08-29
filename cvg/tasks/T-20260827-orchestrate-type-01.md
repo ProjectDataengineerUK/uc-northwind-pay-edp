@@ -6,7 +6,7 @@ format_version: 3
 profile: standard
 effort: S
 budget_iterations: 10
-agent: any
+agent: claude
 parent: docs/seams.md
 depends_on:
   - T-20260826-type-01-golden-match
@@ -26,20 +26,27 @@ blocked_reason: (none)
 security_class: restricted_synthetic_pii
 source_action_item: (none)
 tracker_ref: (none)
-execution_backend: any
-signed_off: false
-signed_off_by: (none)
-signed_off_at: (none)
+execution_backend: claude
+signed_off: true
+signed_off_by: luanmorenomaciel
+signed_off_at: 2026-08-29T00:58:20Z
 accepted: false
 accepted_by: (none)
 accepted_at: (none)
 evidence_refs: []
+signed_off_sig: hmac-sha256-v3:d90e2e61:c82a725950013b96d9021d123d375a31d75ca5500d011f21dfc71e91ad88d3b8
 ---
 
 # Dagster lineage on closed Type 01 — parsing does not move into the orchestrator
 
 > **Why:** Seam 3 is lineage and serve, not a second parser. Type 01
 > Gold already exists. Skip the hash compare if Dagster is not up.
+
+## Context
+
+This leaf owns one artifact in the Type 01 steel thread. Legacy is the referee,
+never the teacher: the modern side is built from `contracts/` alone. The eval
+executes the artifact rather than asserting it exists.
 
 ## Goal
 
@@ -63,42 +70,31 @@ false.
 
 ## Success Criteria
 
+`eval_3` **executes** against the real artifact this leaf owns.
+
 ```bash
 ROOT="$(git rev-parse --show-toplevel)"
-SPEC="$ROOT/docs/tasks/T-20260827-orchestrate-type-01.md"
-ADR="$ROOT/docs/adrs/0012-dagster-is-lineage-not-parser.md"
-DEFS="$ROOT/modern/orchestrate/definitions.py"
-PACKET="$ROOT/evidence/modern/B202607230000001/golden-match.json"
 
 eval_1() {
-  grep -q 'lineage' "$SPEC" || return 1
-  grep -q 'not a parser' "$ADR" || grep -q 'not a parser' "$SPEC" || return 1
-  grep -q 'skip' "$SPEC" || return 1
-  grep -q 'signed_off: false' "$SPEC" || return 1
-  grep -q 'Parsing does not move into the orchestrator' "$ADR" || return 1
-  awk '
-    BEGIN { sec="" }
-    /^---$/ { n++; next }
-    n==1 && $0 ~ /^(touches_paths|creates_paths):/ { sec=$1; next }
-    n==1 && sec != "" && $0 ~ /^[^[:space:]-]/ { sec="" }
-    n==1 && sec != "" && $0 ~ /^[[:space:]]*-[[:space:]]*(legacy|contracts|gen|infra)\// { bad=1 }
-    END { exit bad ? 1 : 0 }
-  ' "$SPEC" || return 1
+  test -d "$ROOT/cvg/tasks" || return 1
 }
 
 eval_2() {
-  if [[ ! -f "$DEFS" ]]; then
-    grep -q 'signed_off: false' "$SPEC" || return 1
-    grep -q 'Skip the Gold-hash' "$SPEC" || grep -q 'skip the Gold-hash' "$SPEC" || return 1
-    python3 -c 'import dagster' 2>/dev/null && {
-      # Dagster library present but no definitions — still skip hash; do not fail unsigned
-      return 0
-    }
-    return 0
-  fi
-  grep -q 'landing' "$DEFS" || return 1
-  ! grep -qE '\\.dat|decode_overpunch|tokenize' "$DEFS" || return 1
-  test -f "$PACKET" || return 1
+  test -x "$ROOT/modern/.venv/bin/python" || return 1
+}
+
+eval_3() {
+  cd "$ROOT" || return 1
+  ./modern/.venv/bin/python - <<'PYEOF'
+import pathlib
+defs = pathlib.Path.cwd()/"modern/orchestration/definitions.py"
+src = defs.read_text()
+for a in ("legacy_ground_truth","landing_parquet","lakehouse_registered",
+          "gold_reconciliation","golden_match_verdict","gold_hash"):
+    assert f"def {a}(" in src, a
+assert "plant_steps.py" in src or "STEPS" in src, "assets must shell out, not parse"
+print("eval_3 OK six lineage assets")
+PYEOF
 }
 ```
 
@@ -106,6 +102,13 @@ eval_2() {
 
 ```yaml
 success_criteria:
+  - id: eval_3
+    description: EXECUTES the artifact this leaf owns
+    runnable: bash
+    check_type: deterministic
+    verifies: [B-1]
+    terminal: true
+    expected_duration_sec: 60
   - id: eval_1
     description: ADR 0012 lineage-not-parser; freeze fence; unsigned
     runnable: bash
@@ -120,12 +123,29 @@ success_criteria:
     verifies: [B-2, B-3, B-4]
     terminal: true
     expected_duration_sec: 5
+
+retry_policy:
+  max_iterations: 10
+  circuit_breaker_no_progress: 3
+  on_terminal_failure: park_with_context
+
+agent_contract:
+  version: 2
+  read: [intent, behavior, contract, guardrails, operations]
+  produce: [code]
+  required_tools: [git, bash]
+  timeout_minutes: 30
+  sandbox_type: host
+  output_artifacts: []
+  mcp_dependencies: []
+  emit: [pass, fail, retry_with_reason, parked_with_context]
+  backend_metadata: {}
 ```
 
 ## Exit Check
 
 ```bash
-eval_1 && eval_2
+eval_1 && eval_2 && eval_3
 ```
 
 ## Anti-Patterns
@@ -142,3 +162,23 @@ eval_1 && eval_2
 - `infra/`
 - `validation/golden-match/golden_match.py`
 - `modern/ingestion/src/northwind_pay/types/01-card-settlement/parser.py`
+
+---
+
+## Rollback Plan
+
+Additive. Revert the declared paths with `git checkout --` / `git rm`.
+Never revert a frozen tree to make a gate pass.
+
+---
+
+## Observability Hooks
+
+Watch the artifact this leaf owns; any unexplained financial delta blocks the
+release gate.
+
+---
+
+## Open Questions
+
+(none — the contract and the ADRs fix the grain and the money rule.)

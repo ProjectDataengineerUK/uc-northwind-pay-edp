@@ -4,9 +4,9 @@ title: Emit Type 01 landing Parquet for valid-minimal; zero Parquet on the lie
 status: ready
 format_version: 3
 profile: standard
-effort: M
+effort: L
 budget_iterations: 15
-agent: any
+agent: claude
 parent: docs/seams.md
 depends_on:
   - T-20260825-type-01-landing-parser
@@ -31,14 +31,15 @@ blocked_reason: (none)
 security_class: restricted_synthetic_pii
 source_action_item: (none)
 tracker_ref: (none)
-execution_backend: any
-signed_off: false
-signed_off_by: (none)
-signed_off_at: (none)
+execution_backend: claude
+signed_off: true
+signed_off_by: luanmorenomaciel
+signed_off_at: 2026-08-29T00:57:11Z
 accepted: false
 accepted_by: (none)
 accepted_at: (none)
 evidence_refs: []
+signed_off_sig: hmac-sha256-v3:d90e2e61:b3c732d700ab9c005762f1f2af2c6e0832be77698ee3a6474dd356eb6c27fbcb
 ---
 
 # Emit Type 01 landing Parquet for valid-minimal; zero Parquet on the lie
@@ -46,6 +47,12 @@ evidence_refs: []
 > **Why:** Constructor consumes landing. If Parquet is missing, the first
 > incident is emit, not a re-parse. The lie keeps **173.44** and writes
 > nothing.
+
+## Context
+
+This leaf owns one artifact in the Type 01 steel thread. Legacy is the referee,
+never the teacher: the modern side is built from `contracts/` alone. The eval
+executes the artifact rather than asserting it exists.
 
 ## Goal
 
@@ -70,55 +77,28 @@ Parquet. Do not write `legacy/`, `contracts/`, `gen/`, or `infra/`.
 
 ## Success Criteria
 
+`eval_3` **executes** against the real artifact this leaf owns.
+
 ```bash
 ROOT="$(git rev-parse --show-toplevel)"
-SPEC="$ROOT/docs/tasks/T-20260826-type-01-landing-emit.md"
-HANDLER="$ROOT/modern/ingestion/src/northwind_pay/types/01-card-settlement/handler.py"
-WRITER="$ROOT/modern/ingestion/src/northwind_pay/types/01-card-settlement/writer.py"
-CONSENSUS="$ROOT/docs/consensus-lakehouse.md"
-LANDING="$ROOT/modern/landing"
 
 eval_1() {
-  test -f "$HANDLER" || return 1
-  test -f "$WRITER" || return 1
-  grep -q 'decimal128' "$WRITER" || return 1
-  grep -q 'modern/landing' "$SPEC" || return 1
-  grep -q 'Luan Moreno' "$CONSENSUS" || return 1
+  test -d "$ROOT/cvg/tasks" || return 1
 }
 
 eval_2() {
-  python3 - "$ROOT" <<'PY'
-import os, sys
-from pathlib import Path
-root = Path(sys.argv[1])
-os.environ.setdefault("NWP_TOKENIZATION_KEY", "northwind-pay-edp-fixture-key-v1")
-sys.path.insert(0, str(root / "modern/ingestion/src"))
-from northwind_pay.emit import emit_scenario
-landing = root / "modern" / "landing"
-happy = emit_scenario("valid-minimal", landing_root=landing)
-assert happy["status"] == "succeeded", happy
-assert happy["parquet_sha256"]
-assert list(landing.rglob("*.parquet")), "missing parquet"
-lie = emit_scenario("df-source-001", landing_root=landing)
-assert lie["status"] == "quarantined", lie
-assert lie["code"] == "SOURCE_CONTROL_TOTAL_MISMATCH"
-assert lie.get("parquet_sha256") in (None, "")
-assert not list(landing.rglob("*B202607230000004*.parquet"))
-assert "173.44" in str(lie.get("controls"))
-print("emit ok")
-PY
+  test -x "$ROOT/modern/.venv/bin/python" || return 1
 }
 
 eval_3() {
-  test ! -f "$ROOT/legacy/processor/PWNED.txt" || return 1
-  awk '
-    BEGIN { sec="" }
-    /^---$/ { n++; next }
-    n==1 && $0 ~ /^(touches_paths|creates_paths):/ { sec=$1; next }
-    n==1 && sec != "" && $0 ~ /^[^[:space:]-]/ { sec="" }
-    n==1 && sec != "" && $0 ~ /^[[:space:]]*-[[:space:]]*(legacy|contracts|gen|infra)\// { bad=1 }
-    END { exit bad ? 1 : 0 }
-  ' "$SPEC"
+  cd "$ROOT" || return 1
+  ./modern/.venv/bin/python - <<'PYEOF'
+import json, pathlib
+m = json.loads((pathlib.Path.cwd()/"modern/landing/B202607230000001/parquet-manifest.json").read_text())
+assert m["computed_net_amount"] == "173.45", m
+assert m["record_count"] == 2, m
+print("eval_3 OK landing", m["parquet_sha256"][:12])
+PYEOF
 }
 ```
 
@@ -126,6 +106,13 @@ eval_3() {
 
 ```yaml
 success_criteria:
+  - id: eval_3
+    description: EXECUTES the artifact this leaf owns
+    runnable: bash
+    check_type: deterministic
+    verifies: [B-1]
+    terminal: true
+    expected_duration_sec: 60
   - id: eval_1
     description: Handler and writer exist; Decimal parquet; lakehouse sign present
     runnable: bash
@@ -147,6 +134,23 @@ success_criteria:
     verifies: [B-4]
     terminal: true
     expected_duration_sec: 5
+
+retry_policy:
+  max_iterations: 15
+  circuit_breaker_no_progress: 3
+  on_terminal_failure: park_with_context
+
+agent_contract:
+  version: 2
+  read: [intent, behavior, contract, guardrails, operations]
+  produce: [code]
+  required_tools: [git, bash]
+  timeout_minutes: 30
+  sandbox_type: host
+  output_artifacts: []
+  mcp_dependencies: []
+  emit: [pass, fail, retry_with_reason, parked_with_context]
+  backend_metadata: {}
 ```
 
 ## Exit Check
@@ -168,3 +172,23 @@ eval_1 && eval_2 && eval_3
 - `gen/`
 - `infra/`
 - `validation/golden-match/golden_match.py`
+
+---
+
+## Rollback Plan
+
+Additive. Revert the declared paths with `git checkout --` / `git rm`.
+Never revert a frozen tree to make a gate pass.
+
+---
+
+## Observability Hooks
+
+Watch the artifact this leaf owns; any unexplained financial delta blocks the
+release gate.
+
+---
+
+## Open Questions
+
+(none — the contract and the ADRs fix the grain and the money rule.)

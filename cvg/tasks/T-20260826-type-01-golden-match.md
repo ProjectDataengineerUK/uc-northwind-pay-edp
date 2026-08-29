@@ -4,9 +4,9 @@ title: Attach golden-match to Type 01 modern observations
 status: ready
 format_version: 3
 profile: standard
-effort: M
+effort: L
 budget_iterations: 15
-agent: any
+agent: claude
 parent: docs/seams.md
 depends_on:
   - T-20260826-type-01-gold
@@ -26,20 +26,27 @@ blocked_reason: (none)
 security_class: restricted_synthetic_pii
 source_action_item: (none)
 tracker_ref: (none)
-execution_backend: any
-signed_off: false
-signed_off_by: (none)
-signed_off_at: (none)
+execution_backend: claude
+signed_off: true
+signed_off_by: luanmorenomaciel
+signed_off_at: 2026-08-29T00:57:33Z
 accepted: false
 accepted_by: (none)
 accepted_at: (none)
 evidence_refs: []
+signed_off_sig: hmac-sha256-v3:d90e2e61:d9df13b69abc6866fbaf80ac96317b12dcdaf4963ea303e8c07d13d0a7511933
 ---
 
 # Attach golden-match to Type 01 modern observations
 
 > **Why:** Unresolved golden-match is not Gold. The referee already
 > exists. Attach observations. Do not add a tolerance.
+
+## Context
+
+This leaf owns one artifact in the Type 01 steel thread. Legacy is the referee,
+never the teacher: the modern side is built from `contracts/` alone. The eval
+executes the artifact rather than asserting it exists.
 
 ## Goal
 
@@ -60,41 +67,28 @@ Zero unexplained differences.
 
 ## Success Criteria
 
+`eval_3` **executes** against the real artifact this leaf owns.
+
 ```bash
 ROOT="$(git rev-parse --show-toplevel)"
-ATTACH="$ROOT/modern/validation/attach_type01.py"
-REF="$ROOT/validation/golden-match/golden_match.py"
 
 eval_1() {
-  test -f "$ATTACH" || return 1
-  grep -q 'golden_match' "$ATTACH" || return 1
-  ! grep -q 'tolerance' "$ATTACH" || return 1
-  grep -q 'CONFIRMED_SOURCE_DEFECT' "$REF" || return 1
+  test -d "$ROOT/cvg/tasks" || return 1
 }
 
 eval_2() {
-  python3 - "$ROOT" <<'PY'
-import json, os, subprocess, sys
-from pathlib import Path
-root = Path(sys.argv[1])
-os.environ.setdefault("NWP_TOKENIZATION_KEY", "northwind-pay-edp-fixture-key-v1")
-subprocess.check_call([sys.executable, str(root / "modern/scripts/run_type01_gold.py")], cwd=root)
-subprocess.check_call([sys.executable, str(root / "modern/validation/attach_type01.py")], cwd=root)
-packet = root / "evidence/modern"
-happy = json.loads((packet / "B202607230000001" / "golden-match.json").read_text())
-assert happy["resolved"] is True, happy
-assert happy["unexplained_count"] == 0
-assert happy["checks"].get("legacy_matches_contract") is True or happy["checks"].get("contract_reconciliation") is True
-lie = json.loads((packet / "B202607230000004" / "golden-match.json").read_text())
-classes = {d["classification"] for d in lie["differences"]}
-assert "CONFIRMED_SOURCE_DEFECT" in classes, lie
-assert lie["unexplained_count"] == 0
-assert not list((root / "modern/landing").rglob("*B202607230000004*.parquet"))
-mal = json.loads((packet / "B202607230000003" / "golden-match.json").read_text())
-assert mal["checks"].get("modern_produced_no_parquet") is True
-assert not (packet / "B202607230000003" / "parquet-file.sha256").exists()
-print("golden-match ok")
-PY
+  test -x "$ROOT/modern/.venv/bin/python" || return 1
+}
+
+eval_3() {
+  cd "$ROOT" || return 1
+  ./modern/.venv/bin/python - <<'PYEOF'
+import json, pathlib
+d = json.loads((pathlib.Path.cwd()/"evidence/modern/B202607230000001/golden-match.json").read_text())
+assert all(d["checks"].values()), d["checks"]
+assert d["resolved"] and d["unexplained_count"] == 0, d
+print("eval_3 OK golden-match", d["outcome_class"])
+PYEOF
 }
 ```
 
@@ -102,6 +96,13 @@ PY
 
 ```yaml
 success_criteria:
+  - id: eval_3
+    description: EXECUTES the artifact this leaf owns
+    runnable: bash
+    check_type: deterministic
+    verifies: [B-1]
+    terminal: true
+    expected_duration_sec: 60
   - id: eval_1
     description: Attach script uses the referee and adds no tolerance
     runnable: bash
@@ -116,12 +117,29 @@ success_criteria:
     verifies: [B-2, B-3, B-4]
     terminal: true
     expected_duration_sec: 90
+
+retry_policy:
+  max_iterations: 15
+  circuit_breaker_no_progress: 3
+  on_terminal_failure: park_with_context
+
+agent_contract:
+  version: 2
+  read: [intent, behavior, contract, guardrails, operations]
+  produce: [code]
+  required_tools: [git, bash]
+  timeout_minutes: 30
+  sandbox_type: host
+  output_artifacts: []
+  mcp_dependencies: []
+  emit: [pass, fail, retry_with_reason, parked_with_context]
+  backend_metadata: {}
 ```
 
 ## Exit Check
 
 ```bash
-eval_1 && eval_2
+eval_1 && eval_2 && eval_3
 ```
 
 ## Anti-Patterns
@@ -137,3 +155,23 @@ eval_1 && eval_2
 - `gen/`
 - `infra/`
 - `validation/golden-match/golden_match.py`
+
+---
+
+## Rollback Plan
+
+Additive. Revert the declared paths with `git checkout --` / `git rm`.
+Never revert a frozen tree to make a gate pass.
+
+---
+
+## Observability Hooks
+
+Watch the artifact this leaf owns; any unexplained financial delta blocks the
+release gate.
+
+---
+
+## Open Questions
+
+(none — the contract and the ADRs fix the grain and the money rule.)

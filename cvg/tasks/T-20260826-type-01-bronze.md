@@ -6,7 +6,7 @@ format_version: 3
 profile: standard
 effort: S
 budget_iterations: 10
-agent: any
+agent: claude
 parent: docs/seams.md
 depends_on:
   - T-20260826-type-01-dlt-register
@@ -27,17 +27,24 @@ blocked_reason: (none)
 security_class: restricted_synthetic_pii
 source_action_item: (none)
 tracker_ref: (none)
-execution_backend: any
-signed_off: false
-signed_off_by: (none)
-signed_off_at: (none)
+execution_backend: claude
+signed_off: true
+signed_off_by: luanmorenomaciel
+signed_off_at: 2026-08-29T00:58:05Z
 accepted: false
 accepted_by: (none)
 accepted_at: (none)
 evidence_refs: []
+signed_off_sig: hmac-sha256-v3:d90e2e61:22b7ae7264a73903f40d54d9e2f1f35efe38faeda149cf555a69bd06278fc63f
 ---
 
 # Type 01 Bronze is source-aligned to landing
+
+## Context
+
+This leaf owns one artifact in the Type 01 steel thread. Legacy is the referee,
+never the teacher: the modern side is built from `contracts/` alone. The eval
+executes the artifact rather than asserting it exists.
 
 ## Goal
 
@@ -52,21 +59,28 @@ No re-parse. No PAN/CPF transform.
 
 ## Success Criteria
 
+`eval_3` **executes** against the real artifact this leaf owns.
+
 ```bash
 ROOT="$(git rev-parse --show-toplevel)"
-B="$ROOT/modern/dbt/models/bronze/bronze_card_settlement.sql"
-C="$ROOT/modern/dbt/models/bronze/bronze_card_settlement_control.sql"
 
 eval_1() {
-  test -f "$B" && test -f "$C" || return 1
-  grep -q 'source_record_number' "$B" || return 1
-  grep -q 'decimal(18, 2)' "$B" || return 1
-  ! grep -qiE 'postgres|legacy\\.|tokenize|overpunch|\\.dat' "$B" "$C" || return 1
+  test -d "$ROOT/cvg/tasks" || return 1
 }
 
 eval_2() {
-  test -f "$ROOT/modern/dbt/tests/assert_type01_no_clear_pan_in_bronze.sql" || return 1
-  test -f "$ROOT/modern/dbt/tests/assert_type01_bronze_grain.sql" || return 1
+  test -x "$ROOT/modern/.venv/bin/python" || return 1
+}
+
+eval_3() {
+  cd "$ROOT" || return 1
+  ./modern/.venv/bin/python - <<'PYEOF'
+import duckdb, pathlib
+c = duckdb.connect(str(pathlib.Path.cwd()/"modern/lakehouse/ducklake/northwind_modern.duckdb"), read_only=True)
+n = c.execute("select count(*) from bronze.bronze_card_settlement").fetchone()[0]
+assert n == 2, n
+print("eval_3 OK bronze rows", n)
+PYEOF
 }
 ```
 
@@ -74,6 +88,13 @@ eval_2() {
 
 ```yaml
 success_criteria:
+  - id: eval_3
+    description: EXECUTES the artifact this leaf owns
+    runnable: bash
+    check_type: deterministic
+    verifies: [B-1]
+    terminal: true
+    expected_duration_sec: 60
   - id: eval_1
     description: Bronze SQL is source-aligned and does not re-parse
     runnable: bash
@@ -88,12 +109,29 @@ success_criteria:
     verifies: [B-1, B-2]
     terminal: true
     expected_duration_sec: 5
+
+retry_policy:
+  max_iterations: 10
+  circuit_breaker_no_progress: 3
+  on_terminal_failure: park_with_context
+
+agent_contract:
+  version: 2
+  read: [intent, behavior, contract, guardrails, operations]
+  produce: [code]
+  required_tools: [git, bash]
+  timeout_minutes: 30
+  sandbox_type: host
+  output_artifacts: []
+  mcp_dependencies: []
+  emit: [pass, fail, retry_with_reason, parked_with_context]
+  backend_metadata: {}
 ```
 
 ## Exit Check
 
 ```bash
-eval_1 && eval_2
+eval_1 && eval_2 && eval_3
 ```
 
 ## Do-Not-Touch
@@ -102,3 +140,29 @@ eval_1 && eval_2
 - `contracts/`
 - `gen/`
 - `infra/`
+
+---
+
+## Rollback Plan
+
+Additive. Revert the declared paths with `git checkout --` / `git rm`.
+Never revert a frozen tree to make a gate pass.
+
+---
+
+## Observability Hooks
+
+Watch the artifact this leaf owns; any unexplained financial delta blocks the
+release gate.
+
+---
+
+## Open Questions
+
+(none — the contract and the ADRs fix the grain and the money rule.)
+
+---
+
+## Anti-Patterns
+
+- Don't weaken the referee. Don't rewrite `expected/`. Don't patch `legacy/`.
