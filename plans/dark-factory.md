@@ -337,6 +337,15 @@ file from upstream.
 Type `06` stays sealed until that day. Authoring the miss is later
 work. The classification above is the contract for that kit.
 
+**Flywheel, 2026-08-28 (this checkout).** Queue in, classified evidence
+out. Type 06 modern Gold is HALF_UP **1.01** `MATCHED` against the
+contract. Legacy applied **1.00** with `rounding_mode=HALF_EVEN` and
+reported `MATCHED` against itself. One code:
+`CONFIRMED_LEGACY_DEFECT`. Packet:
+`evidence/factory/type-06.json`. The type is stalled. The flywheel
+must not patch Java, net the two questions, or settle without that
+packet.
+
 ---
 
 ## 8. Mapping to the KurvPay `/tsys:onboard` line

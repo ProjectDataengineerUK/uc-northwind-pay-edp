@@ -24,5 +24,7 @@ Seams on this plant: **ingest-landing**, **dlt-gold**,
 | T-20260827-type-05-ingest | ingest-landing | `docs/tasks/T-20260827-type-05-ingest.md` `eval_1 && eval_2` · `HALF_UP` · `DF-SOURCE-005` zero Parquet | queued |
 | T-20260827-type-05-lakehouse | dlt-gold | `docs/tasks/T-20260827-type-05-lakehouse.md` `eval_1 && eval_2` · `DF-SOURCE-005` = `CONFIRMED_SOURCE_DEFECT` · `rounding-half-up` = `HALF_UP` · `HALF_EVEN` = `MODERN_DEFECT` | queued |
 | T-20260827-orchestrate-type-01 | orchestrate-serve | `docs/tasks/T-20260827-orchestrate-type-01.md` `eval_1 && eval_2` · same Gold hash if Dagster exists · **skip hash if Dagster is not up** | queued · do not stand up Dagster to look busy |
+| T-20260828-type-06-ingest | ingest-landing | `docs/tasks/T-20260828-type-06-ingest.md` `eval_1 && eval_2 && eval_3` · HALF_UP **1.01** · malformed zero Parquet | **built** · five-file present · `signed_off: true` |
+| T-20260828-type-06-lakehouse | dlt-gold | `docs/tasks/T-20260828-type-06-lakehouse.md` · two questions · `CONFIRMED_LEGACY_DEFECT` | **stalled** · packet `evidence/factory/type-06.json` · modern **1.01** · legacy **1.00** · do not patch |
 
-Do not settle from chat. Do not open Type `06`. Do not create empty type folders.
+Do not settle from chat. Type `06` moves when `evidence/` holds the packet. Do not create empty type folders. Do not dump Types `02`–`05`.

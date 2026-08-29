@@ -18,6 +18,7 @@ DEFAULT_DATABASE = (
 
 TABLE_BY_TYPE = {
     "01": "card_settlement",
+    "06": "merchant_chargeback",
 }
 
 
@@ -31,7 +32,7 @@ class RegistrationResult:
 
 
 def landing_files(landing_root: Path, type_number: str) -> list[Path]:
-    suffix = {"01": "NW_CARD_SETTLEMENT"}[type_number]
+    suffix = {"01": "NW_CARD_SETTLEMENT", "06": "NW_MERCHANT_CHARGEBACK"}[type_number]
     return sorted(
         path
         for path in landing_root.rglob("*.parquet")
@@ -51,20 +52,30 @@ def _batch_controls(files: list[Path], type_number: str) -> Iterator[dict[str, o
         if not manifest_path.is_file():
             continue
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        yield {
+        row: dict[str, object] = {
             "batch_id": str(manifest["batch_id"]),
             "computed_detail_count": int(manifest["computed_detail_count"]),
-            "computed_net_amount": str(manifest["computed_net_amount"]),
             "contract_code": str(manifest["contract_code"]),
             "currency": str(manifest.get("currency", "BRL")),
             "declared_detail_count": int(manifest["declared_detail_count"]),
-            "declared_net_amount": str(manifest["declared_net_amount"]),
             "parquet_sha256": str(manifest["parquet_sha256"]),
             "raw_sha256": str(manifest["raw_sha256"]),
             "record_count": int(manifest["record_count"]),
             "source_file": str(manifest["source_file"]),
             "type_number": type_number,
         }
+        if type_number == "01":
+            row["computed_net_amount"] = str(manifest["computed_net_amount"])
+            row["declared_net_amount"] = str(manifest["declared_net_amount"])
+        elif type_number == "06":
+            row["computed_original_amount"] = str(manifest["computed_original_amount"])
+            row["declared_original_amount"] = str(manifest["declared_original_amount"])
+            row["computed_chargeback_amount"] = str(manifest["computed_chargeback_amount"])
+            row["declared_chargeback_amount"] = str(manifest["declared_chargeback_amount"])
+            row["computed_calculated_amount"] = str(manifest["computed_calculated_amount"])
+            row["declared_calculated_amount"] = str(manifest["declared_calculated_amount"])
+            row["rounding_mode"] = str(manifest.get("rounding_mode", "HALF_UP"))
+        yield row
 
 
 def register(

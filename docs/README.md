@@ -24,7 +24,7 @@ Do not upload these files into NotebookLM. The brain is inbound only
 | **2** | Translator (SWE) | Landing ADRs 0001–0005, **0006 parked**, `seams.md`, ingest **sign**, one parser leaf | parser may exist under `modern/ingestion/`; Parquet **not** required Tuesday |
 | **3** | Constructor (DE + analytics) | Unpark 0006 → ADRs 0007+; seam 2 legs; **`consensus-lakehouse.md`**; Type 01 lakehouse leaves | Type 01 **landing → Gold + golden-match**. Mesh **seed**. Types `02`–`05` **not** tasked |
 | **4** | Orchestrator | Remaining SWE + DE leaves (`02`–`04`, Type `05`, orchestrate). Unpark 0006 rows 8–9 as **0012–0013** (0006 stays the park record) | Trail first, then loop cranks with a **packet**. Linear is the board. Type `05` unattended |
-| **5** | Dark Factory | Type `06` papers when that drop arrives | Recap Type 01 from disk · Linear queue · look up 02–05 · smoke · **Type `06` 0–8** · flywheel. Classify. Do not patch `legacy/` |
+| **5** | Dark Factory | Type `06` papers (`brd` / tech-spec / ADR 0014–0015 / `seams-type-06.md` / `consensus-type-06.md`) | Recap Type 01 from disk · Linear queue · look up 02–05 · smoke · **Type `06` 0–8** · flywheel. Classify. Do not patch `legacy/` |
 
 **Two nights, two seats, one type** (Tue–Wed). Thursday **walks that trail**, then **generates** the rest and cranks it.
 Do not dump Types `02`–`05` on Wednesday.
@@ -78,6 +78,14 @@ docs/
   tasks/T-20260827-type-05-ingest.md
   tasks/T-20260827-type-05-lakehouse.md
   tasks/T-20260827-orchestrate-type-01.md
+  brd-type-06-merchant-chargeback.md      Pass 0 Capture     Day 5
+  tech-spec-type-06-merchant-chargeback.md Pass 1 Intent     Day 5
+  adrs/0014-type-06-five-file-half-up.md
+  adrs/0015-type-06-gold-grain-and-classification.md
+  seams-type-06.md                       Type 06 on the same three cuts
+  consensus-type-06.md                   Type 06 **signed** 2026-08-28
+  tasks/T-20260828-type-06-ingest.md
+  tasks/T-20260828-type-06-lakehouse.md
 ```
 
 Day 3 product (gitignored — look up in the terminal):
@@ -107,7 +115,7 @@ Day 5 recap **reads the Thursday inventory in [`agenda/d5.md`](../agenda/d5.md)*
 | 1 | Intent | [`tech-spec-type-01-card-settlement.md`](tech-spec-type-01-card-settlement.md) | Same |
 | 2 | Structure | `adrs/` + `CONTEXT.md` | Day 2 landing 0001–0005 + park 0006 ([`run/d2/08-structure.md`](../run/d2/08-structure.md)). Day 3: SA mermaids ([`run/d3/04-prompt-sa-plan.md`](../run/d3/04-prompt-sa-plan.md)), then unpark rows 3–7 as 0007+ ([`run/d3/06-structure.md`](../run/d3/06-structure.md)). Do not recut 0001–0005 |
 | 3 | Decompose | [`seams.md`](seams.md) | Day 2 named three seams; tasked seam 1 ([`run/d2/09-decompose.md`](../run/d2/09-decompose.md)). Day 3 writes **seam 2 legs** (register → medallion → match) ([`run/d3/07-decompose.md`](../run/d3/07-decompose.md)). Day 4 cuts remaining type lanes + orchestrate |
-| 4 | Consensus | [`consensus.md`](consensus.md) · [`consensus-lakehouse.md`](consensus-lakehouse.md) | Day 2 ingest sign **canonical**. Day 3 lakehouse sign **canonical** (2026-08-26). Do not recut ingest |
+| 4 | Consensus | [`consensus.md`](consensus.md) · [`consensus-lakehouse.md`](consensus-lakehouse.md) · [`consensus-type-06.md`](consensus-type-06.md) | Day 2 ingest sign **canonical**. Day 3 lakehouse sign **canonical** (2026-08-26). Day 5 Type 06 sign **canonical** (2026-08-28). Do not recut ingest or lakehouse |
 | 5 | Tasking | `tasks/` | Day 2: one parser leaf ([`run/d2/11-taskspec.md`](../run/d2/11-taskspec.md)). Day 3: Type 01 remainder + lakehouse leaves ([`run/d3/09-taskspec.md`](../run/d3/09-taskspec.md)). Day 4: remaining SWE + DE (`02`–`04`, Type `05`, orchestrate) |
 | 6 | Register | opt-in / `cvg/` | Day 3 Mesh is **seed**. Factory Register is Day 4 ([`run/d4/04-generate-queue.md`](../run/d4/04-generate-queue.md)) |
 | 7 | Bind | harness, not a doc | Shown Day 2 fail-closed; **still on** Days 3–4 |
@@ -132,6 +140,7 @@ here**. Do not debug the CLI in front of the room. A dated signature in
 
 0006 stays as the park record. Day 3 adds **new** ADRs; it does not rewrite 0001–0005.
 Day 4 adds [`0012-dagster-is-lineage-not-parser.md`](adrs/0012-dagster-is-lineage-not-parser.md) (row 8) and [`0013-fastapi-readonly-approved-gold.md`](adrs/0013-fastapi-readonly-approved-gold.md) (row 9). It does not rewrite 0006.
+Day 5 adds [`0014-type-06-five-file-half-up.md`](adrs/0014-type-06-five-file-half-up.md) and [`0015-type-06-gold-grain-and-classification.md`](adrs/0015-type-06-gold-grain-and-classification.md). It does not recut ingest or lakehouse Consensus.
 
 ---
 

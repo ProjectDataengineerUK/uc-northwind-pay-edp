@@ -16,12 +16,9 @@ models:
     bronze:
       +schema: bronze
       +materialized: table
-      +tags: ["type_01"]
     silver:
       +schema: silver
       +materialized: table
-      +tags: ["type_01"]
     gold:
       +schema: gold
       +materialized: table
-      +tags: ["type_01"]
